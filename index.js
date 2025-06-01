@@ -340,7 +340,7 @@ const HandleNotification = async (message) => {
     try {
         const type = message.payload.subscription.type;
         const event = message.payload.event;
-        console.log("[INFO] Received handleNotification:", type);
+        console.log("[INFO] Received notification:", type);
 
         let html = null;
         let timeout = 0;
@@ -357,7 +357,6 @@ const HandleNotification = async (message) => {
                 break;
             case "channel.follow": // follow
                 const follower_username = event.user_login;
-                console.log(event);
                 msg = follower_username + " just followed";
                 ({dataUrl, duration} = await GetTts(msg));
                 html = await ejs.renderFile("views/events/channel.follow.ejs",
@@ -372,7 +371,6 @@ const HandleNotification = async (message) => {
 
 
             case "channel.chat.message": // bits cheer
-                console.log(event);
                 if (event.channel_points_animation_id
                     || event.channel_points_custom_reward_id
                     || event.cheer) return;
@@ -386,9 +384,9 @@ const HandleNotification = async (message) => {
                 })
                 break;
             case "channel.channel_points_custom_reward_redemption.add":
-
                 if (event.reward.title === "TTS"){
-                    name = event.unfunnyttv;
+                    console.log(event)
+                    name = event.user_name;
                     msg = event.user_input;
                     ({dataUrl, duration} = await GetTts(msg));
                     timeout = duration + 2;
