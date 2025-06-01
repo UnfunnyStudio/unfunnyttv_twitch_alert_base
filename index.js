@@ -238,6 +238,17 @@ const GetEventSubRequests = async (session_id) => {
                 method: "websocket",
                 session_id: session_id
             }
+        },
+        {
+            type: "channel.channel_points_custom_reward_redemption.add",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
         }
     ]
 }
@@ -282,31 +293,33 @@ socket.onmessage = async (event) => {
             }
             break;
         case "notification":
+            console.log(message.payload.event.reward);
             await HandleNotification(message);
-            await HandleNotification({
-                payload: {
-                    subscription: {
-                        id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
-                        type: "channel.follow",
-                        version: "2",
-                        status: "enabled",
-                        condition: {
-                            broadcaster_user_id: "1337"
-                        },
-                        transport: {
-                            method: "webhook",
-                            callback: "https://example.com/webhooks/callback"
-                        },
-                        created_at: "2019-11-16T10:11:12.634234626Z"
-                    },
-                    event: {
-                        user_id: "1234",
-                        user_login: "cool_user",
-                        broadcaster_user_id: "1337",
-                        followed_at: "2020-07-15T18:16:11.17106713Z"
-                    }
-                }
-            });
+            // fake follower
+            // await HandleNotification({
+            //     payload: {
+            //         subscription: {
+            //             id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+            //             type: "channel.follow",
+            //             version: "2",
+            //             status: "enabled",
+            //             condition: {
+            //                 broadcaster_user_id: "1337"
+            //             },
+            //             transport: {
+            //                 method: "webhook",
+            //                 callback: "https://example.com/webhooks/callback"
+            //             },
+            //             created_at: "2019-11-16T10:11:12.634234626Z"
+            //         },
+            //         event: {
+            //             user_id: "1234",
+            //             user_login: "cool_user",
+            //             broadcaster_user_id: "1337",
+            //             followed_at: "2020-07-15T18:16:11.17106713Z"
+            //         }
+            //     }
+            // });
             break;
         case "session_keepalive":
 
@@ -359,18 +372,36 @@ const HandleNotification = async (message) => {
 
 
             case "channel.chat.message": // bits cheer
+                console.log(event);
+                if (event.channel_points_animation_id
+                    || event.channel_points_custom_reward_id
+                    || event.cheer) return;
                 msg = event.message.text;
                 ({dataUrl, duration} = await GetTts(msg));
-                timeout = duration+2;
+                timeout = duration + 2;
                 html = await ejs.renderFile("views/events/channel.chat.message.ejs", {
                     name: event.chatter_user_name,
                     msg: msg,
                     tts: dataUrl
                 })
                 break;
+            case "channel.channel_points_custom_reward_redemption.add":
+
+                if (event.reward.title === "TTS"){
+                    name = event.unfunnyttv;
+                    msg = event.user_input;
+                    ({dataUrl, duration} = await GetTts(msg));
+                    timeout = duration + 2;
+                    html = await ejs.renderFile("views/events/channel.channel_points_custom_reward_redemption.add-tts.ejs", {
+                        name: name,
+                        msg: msg,
+                        tts: dataUrl
+                    })
+                }
+                break;
         }
 
-        io.emit("overlay_update", html, timeout-2)
+        io.emit("overlay_update", html, timeout - 2)
         await new Promise(resolve => setTimeout(resolve, timeout * 1000));
     } catch (e) {
         console.error("[ERROR] Failed do event:", e.message);
