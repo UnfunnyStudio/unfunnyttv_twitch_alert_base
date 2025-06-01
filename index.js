@@ -5,6 +5,9 @@ import http from 'http';
 import ejs from 'ejs';
 import say from "say";
 import { v4 as uuidv4 } from 'uuid';
+import { parseFile } from 'music-metadata';
+
+
 
 
 // load json env file (yes im not using dot env as i need to update the values at runtime)
@@ -48,25 +51,32 @@ const SaveEnv = () => {
 
 }
 
-const GetTts = (text = "No tts?") => {
-    return new Promise((resolve, reject) => {
 
+const GetTts = (text = "No tts?") => {
+    return new Promise(async (resolve, reject) => {
         const name = `public/tts/${uuidv4()}.wav`;
 
-        say.export(text, null, 1, name, (err) => {
+        say.export(text, null, 1, name, async (err) => {
             if (err) {
                 reject(err);
                 return;
             }
 
-            const audioBuffer = fs.readFileSync(name);
-            const base64Audio = audioBuffer.toString('base64');
-            const dataUrl = `data:audio/wav;base64,${base64Audio}`;
-            resolve(dataUrl);
-        });
+            try {
+                const metadata = await parseFile(name);
+                const duration = metadata.format.duration; // in seconds!
+                console.log(duration);
+                const audioBuffer = fs.readFileSync(name);
+                const base64Audio = audioBuffer.toString('base64');
+                const dataUrl = `data:audio/wav;base64,${base64Audio}`;
 
+                resolve({ dataUrl, duration });
+            } catch (e) {
+                reject(e);
+            }
+        });
     });
-}
+};
 
 
 const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
@@ -240,6 +250,9 @@ const GetEventSubRequests = async (session_id) => {
 // web socket part
 console.log("[INFO] Starting web socket server");
 
+const event_queue = []
+let event_active = false
+
 const socket = new WebSocket("wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=20");
 
 socket.onopen = function () {
@@ -283,31 +296,52 @@ socket.onmessage = async (event) => {
 
 // event handlers
 const HandleNotification = async (message) => {
-    const type = message.metadata.subscription_type;
-    const event = message.payload.event;
-    console.log("[INFO] Received handleNotification:", type);
-
-    let html = null;
-    switch (type) {
-        case "channel.subscribe": // first timer
-            break;
-        case "channel.subscription.gift": // gifty
-            break;
-        case "channel.subscription.message": // resub
-            break;
-        case "channel.follow": // follow
-            break;
-        case "channel.cheer": // bits cheer
-            break;
-        case "channel.chat.message": // bits cheer
-            const name = event.chatter_user_name;
-            const msg = event.message.text;
-            const tts = await GetTts(msg)
-            html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg, tts: tts})
-            break;
+    // if a event is active add to queue
+    if (event_active) {
+        event_queue.push(message);
+        return;
     }
+    event_active = true;
 
-    io.emit("overlay_update", html)
+    try {
+        const type = message.metadata.subscription_type;
+        const event = message.payload.event;
+        console.log("[INFO] Received handleNotification:", type);
+
+        let html = null;
+        let timeout = 0;
+        switch (type) {
+            case "channel.subscribe": // first timer
+                break;
+            case "channel.subscription.gift": // gifty
+                break;
+            case "channel.subscription.message": // resub
+                break;
+            case "channel.follow": // follow
+                break;
+            case "channel.cheer": // bits cheer
+                break;
+            case "channel.chat.message": // bits cheer
+                const name = event.chatter_user_name;
+                const msg = event.message.text;
+                const {dataUrl, duration}= await GetTts(msg)
+                timeout = duration;
+                html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg, tts: dataUrl})
+                break;
+        }
+
+        io.emit("overlay_update", html)
+        await new Promise(resolve => setTimeout(resolve, timeout * 1000));
+    } catch (e) {
+        console.error("[ERROR] Failed do event:", e.message);
+    } finally {
+        event_active = false;
+
+        if (event_queue.length > 0) {
+            const queue_msg = event_queue.shift();
+            await HandleNotification(queue_msg);
+        }
+    }
 }
 
 
