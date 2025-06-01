@@ -108,18 +108,20 @@ app.get('/auth/twitch/callback', async (req, res) => {
 let user_id = null;
 const GetUserId = async () => {
     if (user_id) return user_id;
-
-    const responce = await fetch("https://api.twitch.tv/helix/users", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.access_token}`,
-            "Client-Id": env.client_id
-        }
-    })
-    const id = (await responce.json()).data[0].id;
-    if (!id) {
-        console.log("[INFO] there was a error getting user id");
+    let id = null;
+    try{
+        const responce = await fetch("https://api.twitch.tv/helix/users", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${env.access_token}`,
+                "Client-Id": env.client_id
+            }
+        })
+        id = (await responce.json()).data[0].id;
+    } catch (e) {
+        console.error("[ERROR] Failed to get users auth code");
+        return null;
     }
     user_id = id;
     return id;
@@ -127,7 +129,18 @@ const GetUserId = async () => {
 
 // the events that need subing :)
 const GetEventSubRequests = async (session_id) => {
-    const streamer_id = await GetUserId();
+
+    let streamer_id = null;
+
+    while (!streamer_id) {
+        streamer_id = await GetUserId();
+        if (!streamer_id) {
+            console.log("[WARN] there was a error getting streamer ID");
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+    }
+
+
     return [
         { // get each message sent in chat just added this one for testing
             type: "channel.chat.message",
