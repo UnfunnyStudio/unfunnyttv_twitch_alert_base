@@ -3,6 +3,8 @@ import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
 import http from 'http';
 import ejs from 'ejs';
+import say from "say";
+import { v4 as uuidv4 } from 'uuid';
 
 
 // load json env file (yes im not using dot env as i need to update the values at runtime)
@@ -46,6 +48,26 @@ const SaveEnv = () => {
 
 }
 
+const GetTts = (text = "No tts?") => {
+    return new Promise((resolve, reject) => {
+
+        const name = `public/tts/${uuidv4()}.wav`;
+
+        say.export(text, null, 1, name, (err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            const audioBuffer = fs.readFileSync(name);
+            const base64Audio = audioBuffer.toString('base64');
+            const dataUrl = `data:audio/wav;base64,${base64Audio}`;
+            resolve(dataUrl);
+        });
+
+    });
+}
+
 
 const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
 console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
@@ -54,6 +76,7 @@ console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
 console.log("[INFO] Staring web server");
 const app = express();
 app.set('view engine', 'ejs');
+app.use(express.static('public'))
 const server = http.createServer(app);
 const io = new SocketIOServer(server);
 
@@ -279,7 +302,8 @@ const HandleNotification = async (message) => {
         case "channel.chat.message": // bits cheer
             const name = event.chatter_user_name;
             const msg = event.message.text;
-            html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg})
+            const tts = await GetTts(msg)
+            html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg, tts: tts})
             break;
     }
 
