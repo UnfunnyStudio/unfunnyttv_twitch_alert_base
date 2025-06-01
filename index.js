@@ -8,7 +8,7 @@ import {v4 as uuidv4} from 'uuid';
 import {parseFile} from 'music-metadata';
 
 
-// load json env file (yes im not using dot env as i need to update the values at runtime)
+// load json env file (yes im not using dot env as I need to update the values at runtime)
 if (!fs.existsSync("env.json")) {
     console.log("[ERROR] There is no `env.json` file");
     process.exit(1)
@@ -29,7 +29,6 @@ let env_write_in_progress = false;
 let env_write_queue = []
 
 const SaveEnv = () => {
-    console.log(env)
     if (env_write_in_progress) {
         env_write_queue.push(true);
         return;
@@ -63,7 +62,6 @@ const GetTts = (text = "No tts?") => {
             try {
                 const metadata = await parseFile(name);
                 const duration = metadata.format.duration; // in seconds!
-                console.log(duration);
                 const audioBuffer = fs.readFileSync(name);
                 const base64Audio = audioBuffer.toString('base64');
                 const dataUrl = `data:audio/wav;base64,${base64Audio}`;
@@ -168,7 +166,6 @@ const GetEventSubRequests = async (session_id) => {
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
     }
-
 
     return [
         { // get each message sent in chat just added this one for testing
@@ -293,7 +290,6 @@ socket.onmessage = async (event) => {
             }
             break;
         case "notification":
-            console.log(message.payload.event.reward);
             await HandleNotification(message);
             // fake follower
             // await HandleNotification({
@@ -385,7 +381,6 @@ const HandleNotification = async (message) => {
                 break;
             case "channel.channel_points_custom_reward_redemption.add":
                 if (event.reward.title === "TTS"){
-                    console.log(event)
                     name = event.user_name;
                     msg = event.user_input;
                     ({dataUrl, duration} = await GetTts(msg));

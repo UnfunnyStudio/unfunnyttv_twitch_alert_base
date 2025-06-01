@@ -1,15 +1,45 @@
-create a `env.json` with:
-```json
-{
-  "client_id": "<twtich app client id>",
-  "client_secret": "<twtich app client secret>",
-  "redirect_uri": "http://localhost:3000/auth/twitch/callback", // for local testing should be set the same on the dev portal
-  "scopes": "user:read:chat+bits:read+moderator:read:followers+channel:read:subscriptions"
-}
-```
+## What is this?
 
-1) npm install
-2) node index.js
-3) login with the link proivded
-4) restart the app
-5) walla now your user is authed (for like 4 hours as the refresh token is not set up yet, remove the `refresh_token` from the `env.json` to reauth)
+This is a simple project I built for myself to enhance my Twitch alerts and create a better stream experience. It’s not designed for general use or as a polished product—just a tool I use personally. However, I believe it could help others learn how to use the Twitch EventSub API and integrate it with their own projects.
+
+## How to use
+
+1. Create a file named `env.json` with the following content:
+   ```json
+   {
+     "client_id": "<your Twitch app client ID>",
+     "client_secret": "<your Twitch app client secret>",
+     "redirect_uri": "http://localhost:3000/auth/twitch/callback",
+     "scopes": "user:read:chat+bits:read+moderator:read:followers+channel:read:subscriptions+channel:manage:redemptions"
+   }
+   ```
+    - For local testing, make sure the `redirect_uri` matches what you’ve set in the Twitch Developer Portal.
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the app:
+   ```bash
+   node index.js
+   ```
+
+4. Follow the login link provided in the console to authenticate.
+
+5. After authentication, restart the app:
+   ```bash
+   node index.js
+   ```
+
+6. You’re all set! Your user will be authenticated for about 4 hours (until the access token expires). To re-authenticate, simply remove the `refresh_token` from `env.json` and go through the login flow again.
+
+---
+
+### Notes:
+
+- For TTS (text-to-speech) channel point redemptions:
+    - Create a custom reward on Twitch named “TTS” that takes user input.
+    - TTS currently only works if you’re hosting the app on **Windows** (otherwise, it’ll probably just crash).
+
+---
