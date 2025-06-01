@@ -27,7 +27,6 @@ const SaveEnv = () => {
     });
 }
 
-console.log(env);
 
 const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
 console.log("You! Yes you! Go here ---> " + auth_url);
@@ -70,6 +69,26 @@ app.get('/auth/twitch/callback', async (req, res) => {
     res.send("Authentication successful! You can close this window.");
 })
 
+// user id
+let user_id = null;
+const GetUserId = async () => {
+    if (user_id) return user_id;
+
+    const responce = await fetch("https://api.twitch.tv/helix/users", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.access_token}`,
+            "Client-Id": env.client_id
+        }
+    })
+    const id = (await responce.json()).data[0].id;
+    if (!id) {
+        console.log("there was a error getting user id");
+    }
+    user_id = id;
+    return id;
+}
 
 // web socket part
 console.log("Starting web socket server");
@@ -80,31 +99,49 @@ socket.onopen = function () {
 
 }
 
-socket.onmessage = function (event) {
+socket.onmessage = async (event) => {
     const message = JSON.parse(event.data);
     const message_type = message.metadata.message_type;
-    console.log("Received a message", message);
+    const streamer_id = await GetUserId();
+    if (message_type !== "session_keepalive") {
+        console.log("Received a message:", message_type);
+    }
 
     switch (message_type) {
         case "session_welcome":
+            const session_id = message.payload.session.id;
+            console.log("Received session id ", session_id);
             // sub to events
             let request = {
                 type: "channel.chat.message",
                 version: "1",
+                condition: {
+                    broadcaster_user_id: streamer_id,
+                    user_id: streamer_id,
+                },
                 transport: {
-
+                    method: "websocket",
+                    session_id: session_id
                 }
             }
+
+            const response = await fetch("https://api.twitch.tv/helix/eventsub/subscriptions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${env.access_token}`,
+                    "Client-Id": env.client_id,
+                }, body: JSON.stringify(request)
+            });
+
             break;
         case "session_keepalive":
-            // if not this remake that con
-            socket.send(JSON.stringify(message));
             break;
     }
 
 
 }
 
-socket.onclose = function () {
-    console.log("Closed Server");
-}
+socket.onclose = (event) => {
+    console.log("Socket closed:", event.code, event.reason);
+};
