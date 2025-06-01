@@ -36,6 +36,17 @@ This is a simple project I built for myself to enhance my Twitch alerts and crea
 
 ---
 
+### Checklist of supported alerts:
+
+- [x] TTS (via channel point redemption)
+- [x] Follower alerts
+- [ ] Subscription alerts
+- [ ] Re-subscription alerts
+- [ ] Gifted subscription alerts
+- [ ] Cheers (bits) alerts
+
+---
+
 ### Notes:
 
 - For TTS (text-to-speech) channel point redemptions:
