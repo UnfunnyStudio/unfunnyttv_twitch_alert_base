@@ -2,14 +2,24 @@ import fs from 'fs'
 import express from 'express';
 
 // load json env file (yes im not using dot env as i need to update the values at runtime)
-if (!fs.existsSync("env.json")) process.exit(1); // no file? die!
-const file_data = fs.readFileSync('env.json', 'utf8');
-let env = JSON.parse(file_data);
+if (!fs.existsSync("env.json")) {
+    console.log("[ERROR] There is no `env.json` file");
+    process.exit(1)
+} // no file? die!
+
+let env = null;
+try {
+    const file_data = fs.readFileSync('env.json', 'utf8');
+    env = JSON.parse(file_data);
+} catch (e) {
+    console.error("[ERROR] failed to read and parse `env.json` : " + e);
+    process.exit(1)
+}
+
 
 // lets just not have race cons :)
 let env_write_in_progress = false;
 let env_write_queue = []
-
 
 const SaveEnv = () => {
     console.log(env)
@@ -18,21 +28,26 @@ const SaveEnv = () => {
         return;
     }
     env_write_in_progress = true;
-    fs.writeFile('env.json', JSON.stringify(env, null, 2), (err) => {
-        env_write_in_progress = false;
-        if (env_write_queue.length > 0) {
-            env_write_queue.pop();
-            SaveEnv();
-        }
-    });
+    try {
+        fs.writeFile('env.json', JSON.stringify(env, null, 2), (err) => {
+            env_write_in_progress = false;
+            if (env_write_queue.length > 0) {
+                env_write_queue.pop();
+                SaveEnv();
+            }
+        });
+    } catch (e) {
+        console.error("[WARN] failed to save `env.json` : " + e);
+    }
+
 }
 
 
 const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
-console.log("You! Yes you! Go here ---> " + auth_url);
+console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
 
 // start http server for auth rec
-console.log("Staring web server");
+console.log("[INFO] Staring web server");
 const app = express();
 const port = env.PORT || 3000;
 app.listen(port, () => {})
@@ -40,15 +55,15 @@ app.listen(port, () => {})
 app.get('/auth/twitch/callback', async (req, res) => {
     const code = req.query.code;
     if (!code) {
-        console.log("failed to get users auth code");
+        console.log("[INFO] failed to get users auth code");
         res.send("Authentication error check console log");
         return;
     } else if (env.refresh_token) {
-        console.log("Found refresh token, new login attempt blocked!");
+        console.log("[INFO] Found refresh token, new login attempt blocked!");
         res.send("Authentication error check console log");
         return;
     }
-    console.log("attempting to get users auth code");
+    console.log("[INFO] attempting to get users auth code");
     const responce = await fetch("https://id.twitch.tv/oauth2/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -84,7 +99,7 @@ const GetUserId = async () => {
     })
     const id = (await responce.json()).data[0].id;
     if (!id) {
-        console.log("there was a error getting user id");
+        console.log("[INFO] there was a error getting user id");
     }
     user_id = id;
     return id;
@@ -157,7 +172,7 @@ const GetEventSubRequests = async (session_id) => {
 
 
 // web socket part
-console.log("Starting web socket server");
+console.log("[INFO] Starting web socket server");
 
 const socket = new WebSocket("wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=20");
 
@@ -169,13 +184,13 @@ socket.onmessage = async (event) => {
     const message = JSON.parse(event.data);
     const message_type = message.metadata.message_type;
     if (message_type !== "session_keepalive") {
-        console.log("Received a message:", message_type);
+        console.log("[INFO] Received a message:", message_type);
     }
 
     switch (message_type) {
         case "session_welcome":
             const session_id = message.payload.session.id;
-            console.log("Received session id ", session_id);
+            console.log("[INFO] Received session id ", session_id);
             // sub to events
             const event_sub_requests = await GetEventSubRequests(session_id);
             for (let i = 0; i < event_sub_requests.length; i++) {
@@ -188,7 +203,7 @@ socket.onmessage = async (event) => {
                     }, body: JSON.stringify(event_sub_requests[i])
                 });
                 const data = await response.json();
-                console.log("Received response:", response);
+                console.log(`(${data.data[0].status}) ` + data.data[0].type);
             }
 
 
@@ -197,9 +212,8 @@ socket.onmessage = async (event) => {
             break;
     }
 
-
 }
 
 socket.onclose = (event) => {
-    console.log("Socket closed:", event.code, event.reason);
+    console.log("[INFO] Socket closed:", event.code, event.reason);
 };
