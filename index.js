@@ -90,6 +90,72 @@ const GetUserId = async () => {
     return id;
 }
 
+// the events that need subing :)
+const GetEventSubRequests = async (session_id) => {
+    const streamer_id = await GetUserId();
+    return [
+        { // get each message sent in chat just added this one for testing
+            type: "channel.chat.message",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id,
+                user_id: streamer_id,
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
+        },
+        { // get the follows not much else to say about this one
+            type: "channel.follow",
+            version: "2",
+            condition: {
+                broadcaster_user_id: streamer_id,
+                moderator_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
+        },
+        { // when people sub but not resub
+            type: "channel.subscribe",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
+        },
+        { // gifted!
+            type: "channel.subscription.gift",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
+        },
+        { // resub with message only if they share it
+            type: "channel.subscription.message",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
+        }
+    ]
+}
+
+
+
 // web socket part
 console.log("Starting web socket server");
 
@@ -102,7 +168,6 @@ socket.onopen = function () {
 socket.onmessage = async (event) => {
     const message = JSON.parse(event.data);
     const message_type = message.metadata.message_type;
-    const streamer_id = await GetUserId();
     if (message_type !== "session_keepalive") {
         console.log("Received a message:", message_type);
     }
@@ -112,27 +177,20 @@ socket.onmessage = async (event) => {
             const session_id = message.payload.session.id;
             console.log("Received session id ", session_id);
             // sub to events
-            let request = {
-                type: "channel.chat.message",
-                version: "1",
-                condition: {
-                    broadcaster_user_id: streamer_id,
-                    user_id: streamer_id,
-                },
-                transport: {
-                    method: "websocket",
-                    session_id: session_id
-                }
+            const event_sub_requests = await GetEventSubRequests(session_id);
+            for (let i = 0; i < event_sub_requests.length; i++) {
+                const response = await fetch("https://api.twitch.tv/helix/eventsub/subscriptions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${env.access_token}`,
+                        "Client-Id": env.client_id,
+                    }, body: JSON.stringify(event_sub_requests[i])
+                });
+                const data = await response.json();
+                console.log("Received response:", response);
             }
 
-            const response = await fetch("https://api.twitch.tv/helix/eventsub/subscriptions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${env.access_token}`,
-                    "Client-Id": env.client_id,
-                }, body: JSON.stringify(request)
-            });
 
             break;
         case "session_keepalive":
