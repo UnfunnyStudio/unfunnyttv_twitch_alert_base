@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <title>Twitch Overlay</title>
     <style>
         html, body {
@@ -13,8 +14,7 @@
             overflow: hidden;
             font-family: sans-serif;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            border: 1px solid black;
         }
     </style>
 </head>
@@ -23,8 +23,17 @@
 <script>
     const socket = io();
 
-    socket.on('overlay_update', (html) => {
+    socket.on('overlay_update', (html, timeout) => {
+        // onm update reset the fade
         document.body.innerHTML = html;
+        document.body.style.transition = '';
+        document.body.style.opacity = '1';
+
+        //after 5 fade over 2
+        setTimeout(() => {
+            document.body.style.transition = 'opacity 2s ease';
+            document.body.style.opacity = '0';
+        }, timeout*1000);
     });
 </script>
 </body>

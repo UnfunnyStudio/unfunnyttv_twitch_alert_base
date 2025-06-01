@@ -1,13 +1,11 @@
 import fs from 'fs'
 import express from 'express';
-import { Server as SocketIOServer } from 'socket.io';
+import {Server as SocketIOServer} from 'socket.io';
 import http from 'http';
 import ejs from 'ejs';
 import say from "say";
-import { v4 as uuidv4 } from 'uuid';
-import { parseFile } from 'music-metadata';
-
-
+import {v4 as uuidv4} from 'uuid';
+import {parseFile} from 'music-metadata';
 
 
 // load json env file (yes im not using dot env as i need to update the values at runtime)
@@ -56,7 +54,7 @@ const GetTts = (text = "No tts?") => {
     return new Promise(async (resolve, reject) => {
         const name = `public/tts/${uuidv4()}.wav`;
 
-        say.export(text, null, 1, name, async (err) => {
+        say.export(text, null, .85, name, async (err) => {
             if (err) {
                 reject(err);
                 return;
@@ -70,7 +68,7 @@ const GetTts = (text = "No tts?") => {
                 const base64Audio = audioBuffer.toString('base64');
                 const dataUrl = `data:audio/wav;base64,${base64Audio}`;
 
-                resolve({ dataUrl, duration });
+                resolve({dataUrl, duration});
             } catch (e) {
                 reject(e);
             }
@@ -98,8 +96,6 @@ server.listen(port, () => {
 io.on('connection', (socket) => {
     console.log(`[INFO] Socket ${socket.id}:${socket.id}`);
 })
-
-
 
 app.get('/', (req, res) => {
     res.render('overlay', {})
@@ -142,7 +138,7 @@ let user_id = null;
 const GetUserId = async () => {
     if (user_id) return user_id;
     let id = null;
-    try{
+    try {
         const responce = await fetch("https://api.twitch.tv/helix/users", {
             method: "GET",
             headers: {
@@ -253,7 +249,7 @@ console.log("[INFO] Starting web socket server");
 const event_queue = []
 let event_active = false
 
-const socket = new WebSocket("wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=20");
+const socket = new WebSocket("wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=10");
 
 socket.onopen = function () {
 
@@ -287,8 +283,33 @@ socket.onmessage = async (event) => {
             break;
         case "notification":
             await HandleNotification(message);
+            await HandleNotification({
+                payload: {
+                    subscription: {
+                        id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                        type: "channel.follow",
+                        version: "2",
+                        status: "enabled",
+                        condition: {
+                            broadcaster_user_id: "1337"
+                        },
+                        transport: {
+                            method: "webhook",
+                            callback: "https://example.com/webhooks/callback"
+                        },
+                        created_at: "2019-11-16T10:11:12.634234626Z"
+                    },
+                    event: {
+                        user_id: "1234",
+                        user_login: "cool_user",
+                        broadcaster_user_id: "1337",
+                        followed_at: "2020-07-15T18:16:11.17106713Z"
+                    }
+                }
+            });
             break;
         case "session_keepalive":
+
             break;
     }
 
@@ -304,12 +325,16 @@ const HandleNotification = async (message) => {
     event_active = true;
 
     try {
-        const type = message.metadata.subscription_type;
+        const type = message.payload.subscription.type;
         const event = message.payload.event;
         console.log("[INFO] Received handleNotification:", type);
 
         let html = null;
         let timeout = 0;
+        let dataUrl = null
+        let duration = 0;
+        let name = "no name";
+        let msg = "no message";
         switch (type) {
             case "channel.subscribe": // first timer
                 break;
@@ -318,19 +343,34 @@ const HandleNotification = async (message) => {
             case "channel.subscription.message": // resub
                 break;
             case "channel.follow": // follow
+                const follower_username = event.user_login;
+                console.log(event);
+                msg = follower_username + " just followed";
+                ({dataUrl, duration} = await GetTts(msg));
+                html = await ejs.renderFile("views/events/channel.follow.ejs",
+                    {
+                        name: follower_username,
+                        tts: dataUrl
+                    })
+                timeout = 10
                 break;
             case "channel.cheer": // bits cheer
                 break;
+
+
             case "channel.chat.message": // bits cheer
-                const name = event.chatter_user_name;
-                const msg = event.message.text;
-                const {dataUrl, duration}= await GetTts(msg)
-                timeout = duration;
-                html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg, tts: dataUrl})
+                msg = event.message.text;
+                ({dataUrl, duration} = await GetTts(msg));
+                timeout = duration+2;
+                html = await ejs.renderFile("views/events/channel.chat.message.ejs", {
+                    name: event.chatter_user_name,
+                    msg: msg,
+                    tts: dataUrl
+                })
                 break;
         }
 
-        io.emit("overlay_update", html)
+        io.emit("overlay_update", html, timeout-2)
         await new Promise(resolve => setTimeout(resolve, timeout * 1000));
     } catch (e) {
         console.error("[ERROR] Failed do event:", e.message);
@@ -343,7 +383,6 @@ const HandleNotification = async (message) => {
         }
     }
 }
-
 
 
 socket.onclose = (event) => {

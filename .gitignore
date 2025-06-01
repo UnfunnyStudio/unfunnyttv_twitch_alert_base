@@ -1,5 +1,5 @@
 node_modules
 .idea
 env.json
-public/tts
+public
 test.js
