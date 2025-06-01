@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twitch Overlay</title>
+    <style>
+        html, body {
+            margin: 0;
+            background: transparent;
+            color: black;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('overlay_update', (html) => {
+        document.body.innerHTML = html;
+    });
+</script>
+</body>
+</html>

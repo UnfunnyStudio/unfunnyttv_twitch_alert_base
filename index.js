@@ -1,5 +1,9 @@
 import fs from 'fs'
 import express from 'express';
+import { Server as SocketIOServer } from 'socket.io';
+import http from 'http';
+import ejs from 'ejs';
+
 
 // load json env file (yes im not using dot env as i need to update the values at runtime)
 if (!fs.existsSync("env.json")) {
@@ -49,8 +53,24 @@ console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
 // start http server for auth rec
 console.log("[INFO] Staring web server");
 const app = express();
+app.set('view engine', 'ejs');
+const server = http.createServer(app);
+const io = new SocketIOServer(server);
+
 const port = env.PORT || 3000;
-app.listen(port, () => {})
+server.listen(port, () => {
+    console.log(`[INFO] Server listening on port ${port}`);
+})
+
+io.on('connection', (socket) => {
+    console.log(`[INFO] Socket ${socket.id}:${socket.id}`);
+})
+
+
+
+app.get('/', (req, res) => {
+    res.render('overlay', {})
+})
 
 app.get('/auth/twitch/callback', async (req, res) => {
     const code = req.query.code;
@@ -66,7 +86,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
     console.log("[INFO] attempting to get users auth code");
     const responce = await fetch("https://id.twitch.tv/oauth2/token", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: new URLSearchParams({
             client_id: env.client_id,
             client_secret: env.client_secret,
@@ -165,10 +185,20 @@ const GetEventSubRequests = async (session_id) => {
                 method: "websocket",
                 session_id: session_id
             }
+        },
+        {
+            type: "channel.cheer",
+            version: "1",
+            condition: {
+                broadcaster_user_id: streamer_id
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
         }
     ]
 }
-
 
 
 // web socket part
@@ -205,14 +235,45 @@ socket.onmessage = async (event) => {
                 const data = await response.json();
                 console.log(`(${data.data[0].status}) ` + data.data[0].type);
             }
-
-
+            break;
+        case "notification":
+            await HandleNotification(message);
             break;
         case "session_keepalive":
             break;
     }
 
 }
+
+// event handlers
+const HandleNotification = async (message) => {
+    const type = message.metadata.subscription_type;
+    const event = message.payload.event;
+    console.log("[INFO] Received handleNotification:", type);
+
+    let html = null;
+    switch (type) {
+        case "channel.subscribe": // first timer
+            break;
+        case "channel.subscription.gift": // gifty
+            break;
+        case "channel.subscription.message": // resub
+            break;
+        case "channel.follow": // follow
+            break;
+        case "channel.cheer": // bits cheer
+            break;
+        case "channel.chat.message": // bits cheer
+            const name = event.chatter_user_name;
+            const msg = event.message.text;
+            html = await ejs.renderFile("views/events/channel.chat.message.ejs", {name: name, msg: msg})
+            break;
+    }
+
+    io.emit("overlay_update", html)
+}
+
+
 
 socket.onclose = (event) => {
     console.log("[INFO] Socket closed:", event.code, event.reason);
