@@ -1,3 +1,6 @@
+// the web server used for the overlay page, auth redirect
+// exports StartWebserver and io (so that it can be accessed to send msg to the overly)
+
 import express from "express";
 import http from "http";
 import {Server as SocketIOServer} from "socket.io";
@@ -9,7 +12,7 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'))
 
 const server = http.createServer(app);
-const io = new SocketIOServer(server);
+export const io = new SocketIOServer(server);
 
 io.on('connection', (socket) => {
     console.log(`[INFO] Socket ${socket.id}:${socket.id}`);
