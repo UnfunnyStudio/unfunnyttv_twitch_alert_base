@@ -1,4 +1,5 @@
 import { env } from "./jsonenv.js";
+import {refreshAccessToken} from "./RefreshToken.js";
 
 let user_id = null;
 export const GetUserId = async () => {
@@ -16,6 +17,7 @@ export const GetUserId = async () => {
         id = (await responce.json()).data[0].id;
     } catch (e) {
         console.error("[ERROR] Failed to get users auth code " + e);
+        refreshAccessToken()
         return null;
     }
     user_id = id;
