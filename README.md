@@ -22,14 +22,14 @@ This is a simple project I built for myself to enhance my Twitch alerts and crea
 
 3. Start the app:
    ```bash
-   node index.js
+   node app.js
    ```
 
 4. Follow the login link provided in the console to authenticate.
 
 5. After authentication, restart the app:
    ```bash
-   node index.js
+   node app.js
    ```
 
 6. You’re all set! Your user will be authenticated for about 4 hours (until the access token expires). To re-authenticate, simply remove the `refresh_token` from `env.json` and go through the login flow again.

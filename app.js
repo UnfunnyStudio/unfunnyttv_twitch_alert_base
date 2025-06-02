@@ -1,135 +1,23 @@
-import fs from 'fs'
-import express from 'express';
-import {Server as SocketIOServer} from 'socket.io';
-import http from 'http';
 import ejs from 'ejs';
-import say from "say";
-import {v4 as uuidv4} from 'uuid';
-import {parseFile} from 'music-metadata';
 
+// custom file imports
+import { env } from "./src/jsonenv.js";
+import { GetTts, SetTTSExportPath } from "./src/tts.js";
+import { StartWebserver } from './src/webserver.js';
 
-// load json env file (yes im not using dot env as I need to update the values at runtime)
-if (!fs.existsSync("env.json")) {
-    console.log("[ERROR] There is no `env.json` file");
-    process.exit(1)
-} // no file? die!
+SetTTSExportPath("public/tts/");
 
-let env = null;
-try {
-    const file_data = fs.readFileSync('env.json', 'utf8');
-    env = JSON.parse(file_data);
-} catch (e) {
-    console.error("[ERROR] failed to read and parse `env.json` : " + e);
-    process.exit(1)
-}
+StartWebserver();
 
+// if the user has not authed then they need to do this!
+if (!env.auth) {
+    const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
+    console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
+    while (!env.auth) { // no blocking, block! kinda funny
+        await new Promise(resolve => setTimeout(resolve, 100));
+    };
+} else console.log("[INFO] users all ready logged in");
 
-// lets just not have race cons :)
-let env_write_in_progress = false;
-let env_write_queue = []
-
-const SaveEnv = () => {
-    if (env_write_in_progress) {
-        env_write_queue.push(true);
-        return;
-    }
-    env_write_in_progress = true;
-    try {
-        fs.writeFile('env.json', JSON.stringify(env, null, 2), (err) => {
-            env_write_in_progress = false;
-            if (env_write_queue.length > 0) {
-                env_write_queue.pop();
-                SaveEnv();
-            }
-        });
-    } catch (e) {
-        console.error("[WARN] failed to save `env.json` : " + e);
-    }
-
-}
-
-
-const GetTts = (text = "No tts?") => {
-    return new Promise(async (resolve, reject) => {
-        const name = `public/tts/${uuidv4()}.wav`;
-
-        say.export(text, null, .85, name, async (err) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            try {
-                const metadata = await parseFile(name);
-                const duration = metadata.format.duration; // in seconds!
-                const audioBuffer = fs.readFileSync(name);
-                const base64Audio = audioBuffer.toString('base64');
-                const dataUrl = `data:audio/wav;base64,${base64Audio}`;
-
-                resolve({dataUrl, duration});
-            } catch (e) {
-                reject(e);
-            }
-        });
-    });
-};
-
-
-const auth_url = "https://id.twitch.tv/oauth2/authorize" + "?response_type=code" + `&client_id=${env.client_id}` + `&redirect_uri=${env.redirect_uri}` + `&scope=${env.scopes}`;
-console.log("[INFO] You! Yes you! Go here ---> " + auth_url);
-
-// start http server for auth rec
-console.log("[INFO] Staring web server");
-const app = express();
-app.set('view engine', 'ejs');
-app.use(express.static('public'))
-const server = http.createServer(app);
-const io = new SocketIOServer(server);
-
-const port = env.PORT || 3000;
-server.listen(port, () => {
-    console.log(`[INFO] Server listening on port ${port}`);
-})
-
-io.on('connection', (socket) => {
-    console.log(`[INFO] Socket ${socket.id}:${socket.id}`);
-})
-
-app.get('/', (req, res) => {
-    res.render('overlay', {})
-})
-
-app.get('/auth/twitch/callback', async (req, res) => {
-    const code = req.query.code;
-    if (!code) {
-        console.log("[INFO] failed to get users auth code");
-        res.send("Authentication error check console log");
-        return;
-    } else if (env.refresh_token) {
-        console.log("[INFO] Found refresh token, new login attempt blocked!");
-        res.send("Authentication error check console log");
-        return;
-    }
-    console.log("[INFO] attempting to get users auth code");
-    const responce = await fetch("https://id.twitch.tv/oauth2/token", {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: new URLSearchParams({
-            client_id: env.client_id,
-            client_secret: env.client_secret,
-            code: code,
-            grant_type: "authorization_code",
-            redirect_uri: `${env.redirect_uri}`,
-        }),
-    })
-
-    const data = await responce.json();
-
-    env.access_token = data.access_token;
-    env.refresh_token = data.refresh_token;
-    SaveEnv();
-    res.send("Authentication successful! You can close this window.");
-})
 
 // user id
 let user_id = null;
@@ -147,7 +35,7 @@ const GetUserId = async () => {
         })
         id = (await responce.json()).data[0].id;
     } catch (e) {
-        console.error("[ERROR] Failed to get users auth code");
+        console.error("[ERROR] Failed to get users auth code " + e);
         return null;
     }
     user_id = id;
