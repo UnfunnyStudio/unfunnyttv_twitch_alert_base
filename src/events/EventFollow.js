@@ -3,7 +3,7 @@ import ejs from "ejs";
 
 export const EventFollow = async (event) => {
     console.log(event);
-    const follower_username = event.user_login;
+    const follower_username = event.user_name;
 
     const msg = follower_username + " just followed";
 

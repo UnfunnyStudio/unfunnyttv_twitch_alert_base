@@ -2,6 +2,7 @@ import {GetEventsToSubTo} from "./EventsToSubTo.js";
 import {env} from "./jsonenv.js";
 import { io } from "./webserver.js";
 import {EventFollow} from "./events/EventFollow.js";
+import {PointTTS} from "./events/PointTTS.js";
 
 console.log("[INFO] Starting web socket server");
 
@@ -43,32 +44,37 @@ export const StartEventHandler = () => {
                 }
                 break;
             case "notification":
-                //await HandleNotification(message); // enable for real use
+                await HandleNotification(message); // enable for real use
                 // fake follower
-                await HandleNotification({
-                    payload: {
-                        subscription: {
-                            id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
-                            type: "channel.follow",
-                            version: "2",
-                            status: "enabled",
-                            condition: {
-                                broadcaster_user_id: "1337"
-                            },
-                            transport: {
-                                method: "webhook",
-                                callback: "https://example.com/webhooks/callback"
-                            },
-                            created_at: "2019-11-16T10:11:12.634234626Z"
-                        },
-                        event: {
-                            user_id: "1234",
-                            user_login: "cool_user",
-                            broadcaster_user_id: "1337",
-                            followed_at: "2020-07-15T18:16:11.17106713Z"
-                        }
-                    }
-                });
+                // await HandleNotification({
+                //     payload: {
+                //         subscription: {
+                //             id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                //             type: "channel.follow",
+                //             version: "2",
+                //             status: "enabled",
+                //             cost: 0,
+                //             condition: {
+                //                 broadcaster_user_id: "1337",
+                //                 moderator_user_id: "1337"
+                //             },
+                //             transport: {
+                //                 method: "webhook",
+                //                 callback: "https://example.com/webhooks/callback"
+                //             },
+                //             created_at: "2019-11-16T10:11:12.634234626Z"
+                //         },
+                //         event: {
+                //             user_id: "1234",
+                //             user_login: "cool_user",
+                //             user_name: "Cool_User",
+                //             broadcaster_user_id: "1337",
+                //             broadcaster_user_login: "cooler_user",
+                //             broadcaster_user_name: "Cooler_User",
+                //             followed_at: "2020-07-15T18:16:11.17106713Z"
+                //         }
+                //     }
+                // });
                 break;
             case "session_keepalive":
 
@@ -109,7 +115,7 @@ export const StartEventHandler = () => {
                     break;
                 case "channel.channel_points_custom_reward_redemption.add":
                     if (event.reward.title === "TTS"){
-
+                        func = PointTTS
                     }
                     break;
             }
