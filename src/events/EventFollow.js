@@ -15,5 +15,5 @@ export const EventFollow = async (event) => {
             tts: dataUrl
         })
 
-    return {timeout: 10, html: html}
+    return {timeout: 6, html: html}
 }

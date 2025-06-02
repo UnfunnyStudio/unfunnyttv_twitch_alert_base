@@ -19,21 +19,24 @@
     </style>
 </head>
 <body>
+<div class="w-full h-full" id="cont">
+
+</div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
+    const cont = document.getElementById('cont');
 
     socket.on('overlay_update', (html, timeout) => {
         // onm update reset the fade
-        document.body.innerHTML = html;
-        document.body.style.transition = '';
-        document.body.style.opacity = '1';
-
-        //after 5 fade over 2
+        cont.innerHTML = html;
+        cont.style.transition = '';
+        cont.style.opacity = '1';
+        console.log(timeout);
         setTimeout(() => {
-            document.body.style.transition = 'opacity 2s ease';
-            document.body.style.opacity = '0';
-        }, timeout*1000);
+            cont.style.transition = 'opacity 2s ease';
+            cont.style.opacity = '0';
+        }, Number(timeout)*1000);
     });
 </script>
 </body>

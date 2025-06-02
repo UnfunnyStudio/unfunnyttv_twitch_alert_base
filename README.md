@@ -40,9 +40,9 @@ This is a simple project I built for myself to enhance my Twitch alerts and crea
 
 - [x] TTS (via channel point redemption)
 - [x] Follower alerts
-- [ ] Subscription alerts
-- [ ] Re-subscription alerts
-- [ ] Gifted subscription alerts
+- [x] Subscription alerts
+- [x] Re-subscription alerts
+- [x] Gifted subscription alerts
 - [ ] Cheers (bits) alerts
 
 ---

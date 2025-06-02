@@ -3,6 +3,9 @@ import {env} from "./jsonenv.js";
 import { io } from "./webserver.js";
 import {EventFollow} from "./events/EventFollow.js";
 import {PointTTS} from "./events/PointTTS.js";
+import {EventNewSub} from "./events/EventNewSub.js";
+import {EventGiftSub} from "./events/EventGiftSub.js";
+import {EventResub} from "./events/EventResub.js";
 
 console.log("[INFO] Starting web socket server");
 
@@ -46,35 +49,37 @@ export const StartEventHandler = () => {
             case "notification":
                 await HandleNotification(message); // enable for real use
                 // fake follower
-                // await HandleNotification({
-                //     payload: {
-                //         subscription: {
-                //             id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
-                //             type: "channel.follow",
-                //             version: "2",
-                //             status: "enabled",
-                //             cost: 0,
-                //             condition: {
-                //                 broadcaster_user_id: "1337",
-                //                 moderator_user_id: "1337"
-                //             },
-                //             transport: {
-                //                 method: "webhook",
-                //                 callback: "https://example.com/webhooks/callback"
-                //             },
-                //             created_at: "2019-11-16T10:11:12.634234626Z"
-                //         },
-                //         event: {
-                //             user_id: "1234",
-                //             user_login: "cool_user",
-                //             user_name: "Cool_User",
-                //             broadcaster_user_id: "1337",
-                //             broadcaster_user_login: "cooler_user",
-                //             broadcaster_user_name: "Cooler_User",
-                //             followed_at: "2020-07-15T18:16:11.17106713Z"
-                //         }
-                //     }
-                // });
+                await HandleNotification({
+                    payload: {
+                        subscription: {
+                            id: "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                            type: "channel.subscription.gift",
+                            version: "1",
+                            status: "enabled",
+                            cost: 0,
+                            condition: {
+                                broadcaster_user_id: "1337"
+                            },
+                            transport: {
+                                method: "webhook",
+                                callback: "https://example.com/webhooks/callback"
+                            },
+                            created_at: "2019-11-16T10:11:12.634234626Z"
+                        },
+                        event: {
+                            user_id: "1234",
+                            user_login: "cool_user",
+                            user_name: "Cool_User",
+                            broadcaster_user_id: "1337",
+                            broadcaster_user_login: "cooler_user",
+                            broadcaster_user_name: "Cooler_User",
+                            total: 2,
+                            tier: "1000",
+                            cumulative_total: 284, // null if anonymous or not shared
+                            is_anonymous: false
+                        }
+                    }
+                });
                 break;
             case "session_keepalive":
 
@@ -97,14 +102,17 @@ export const StartEventHandler = () => {
             const event = message.payload.event;
             console.log("[INFO] Received notification:", type);
 
-            let func = async () => { return { html:"", timeout:0} } // default function
+            let func;
 
             switch (type) {
                 case "channel.subscribe": // first timer
+                    func = EventNewSub;
                     break;
                 case "channel.subscription.gift": // gifty
+                    func = EventGiftSub;
                     break;
                 case "channel.subscription.message": // resub
+                    func = EventResub;
                     break;
                 case "channel.follow": // follow
                     func = EventFollow
@@ -121,7 +129,7 @@ export const StartEventHandler = () => {
             }
 
             const {html, timeout} = await func(event);
-            io.emit("overlay_update", html, timeout + 2) // 2 seconds are added to the timeout for the fade
+            io.emit("overlay_update", html, (timeout + 2)) // 2 seconds are added to the timeout for the fade
             await new Promise(resolve => setTimeout(resolve, timeout * 1000));
         } catch (e) {
             console.error("[ERROR] Failed do event:", e.message);
