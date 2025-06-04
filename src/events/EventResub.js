@@ -2,7 +2,6 @@ import {GetTts} from "../tts.js";
 import ejs from "ejs";
 
 export const EventResub = async (event) => {
-    console.log(event);
     const name = event.user_name;
     const length = event.cumulative_months;
     let msg = name + " just tier " + event.tier/1000 + " subscribed!";

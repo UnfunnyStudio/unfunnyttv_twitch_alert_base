@@ -27,17 +27,32 @@
     const socket = io();
     const cont = document.getElementById('cont');
 
-    socket.on('overlay_update', (html, timeout) => {
-        // onm update reset the fade
+    socket.on('overlay_update', (html, timeout, tts_delay) => {
         cont.innerHTML = html;
+
+        // Immediately reset fade
         cont.style.transition = '';
         cont.style.opacity = '1';
-        console.log(timeout);
+
+        // Schedule fade-out to start after 'timeout' seconds (relative to now)
         setTimeout(() => {
+
             cont.style.transition = 'opacity 2s ease';
             cont.style.opacity = '0';
-        }, Number(timeout)*1000);
+        }, (Number(timeout-2)) * 1000);
+
+        // Schedule audio playback to start after 'tts_delay' seconds (relative to now)
+        setTimeout(() => {
+
+            const audioElement = document.querySelector('audio');
+            if (audioElement) {
+                audioElement.play().catch(err => {
+                    console.error('Audio playback error:', err);
+                });
+            }
+        }, Number(tts_delay) * 1000);
     });
+
 </script>
 </body>
 </html>

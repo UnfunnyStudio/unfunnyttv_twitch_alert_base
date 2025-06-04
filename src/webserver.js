@@ -6,7 +6,7 @@ import http from "http";
 import {Server as SocketIOServer} from "socket.io";
 import {env, SaveEnv} from "./jsonenv.js";
 
-const port = env.PORT || 3000;
+const port = env.port || 3000;
 const app = express();
 app.set('view engine', 'ejs');
 app.use(express.static('public'))
