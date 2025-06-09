@@ -7,7 +7,7 @@ export const PointTTS = async (event) => {
 
     const {dataUrl, duration} = await GetTts(tts_msg);
 
-    const html = await ejs.renderFile("views/events/channel.channel_points_custom_reward_redemption.add-tts.ejs", {
+    const html = await ejs.renderFile("views/events/point_tts.ejs", {
         name: name,
         msg: tts_msg,
         tts: dataUrl

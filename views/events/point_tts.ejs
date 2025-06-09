@@ -1,0 +1,24 @@
+<div class="mx-auto max-w-[50%] mt-5">
+    <p class="mb-3 text-white font-bold text-5xl drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] text-center">
+        <%= name %>
+    </p>
+    <p class="text-white font-bold text-3xl drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] text-center break-all">
+        <%= msg %>
+    </p>
+</div>
+
+<audio id="audioPlayer" autoplay>
+    <source src="<%= tts %>" type="audio/wav">
+</audio>
+
+<script>
+    const audio = document.getElementById('audioPlayer');
+    audio.addEventListener('loadedmetadata', () => {
+        if (audio.duration > 10) {
+            setTimeout(() => {
+                audio.pause();
+                audio.currentTime = 0;
+            }, 10000); // 10 seconds
+        }
+    });
+</script>

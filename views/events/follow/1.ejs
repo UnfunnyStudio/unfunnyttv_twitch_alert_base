@@ -1,12 +1,12 @@
 <div class="mx-auto max-w-[40%] h-[30%] mt-5 relative">
     <video autoplay class="rounded-[5%] max-h-full mx-auto">
-        <source src="/pre_made_videos/follow_cat_bomb.mp4" type="video/mp4">
+        <source src=" <%= video_path %>" type="video/mp4">
     </video>
     <p class="animated-text text-white font-bold text-5xl drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] text-center">
-        <%= name %> just followed!
+        <%= name %>
     </p>
 </div>
-<audio autoplay>
+<audio>
     <source src="<%= tts %>" type="audio/wav">
 </audio>
 

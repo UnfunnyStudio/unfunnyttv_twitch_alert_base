@@ -22,6 +22,7 @@ app.get('/', (req, res) => {
     res.render('overlay', {})
 })
 
+
 app.get('/auth/twitch/callback', async (req, res) => {
     const code = req.query.code;
     if (!code) {

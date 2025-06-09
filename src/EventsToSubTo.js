@@ -90,6 +90,17 @@ export const GetEventsToSubTo = async (session_id) => {
                 method: "websocket",
                 session_id: session_id
             }
+        },
+        {
+            type: "channel.raid",
+            version: "1",
+            condition: {
+                to_broadcaster_user_id: "1337", // could provide from_broadcaster_user_id instead
+            },
+            transport: {
+                method: "websocket",
+                session_id: session_id
+            }
         }
     ]
 }

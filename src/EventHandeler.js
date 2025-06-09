@@ -3,10 +3,9 @@ import {env} from "./jsonenv.js";
 import {io} from "./webserver.js";
 import {EventFollow} from "./events/EventFollow.js";
 import {PointTTS} from "./events/PointTTS.js";
-import {EventNewSub} from "./events/EventNewSub.js";
-import {EventGiftSub} from "./events/EventGiftSub.js";
-import {EventResub} from "./events/EventResub.js";
-import {raw} from "express";
+import {EventSub} from "./events/EventSub.js";
+import {EventCheer} from "./events/EventCheer.js";
+import {EventRaid} from "./events/EventRaid.js";
 
 console.log("[INFO] Starting web socket server");
 
@@ -71,7 +70,7 @@ export const StartEventHandler = () => {
                     }
                     break;
                 case "notification":
-                    await HandleNotification(message); // enable for real use
+                    //await HandleNotification(message); // enable for real use
                     // fake gift sub
                     // await HandleNotification({
                     //     payload: {
@@ -104,7 +103,7 @@ export const StartEventHandler = () => {
                     //         }
                     //     }
                     // });
-                    // //fake followerAdd commentMore actions
+                    //fake followerAdd commentMore actions
                     // await HandleNotification({
                     //     payload: {
                     //         subscription: {
@@ -163,6 +162,105 @@ export const StartEventHandler = () => {
                     //         }
                     //     }
                     // })
+                    // await HandleNotification({
+                    //     payload: {
+                    //         "subscription": {
+                    //             "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                    //             "type": "channel.subscription.message",
+                    //             "version": "1",
+                    //             "status": "enabled",
+                    //             "cost": 0,
+                    //             "condition": {
+                    //                 "broadcaster_user_id": "1337"
+                    //             },
+                    //             "transport": {
+                    //                 "method": "webhook",
+                    //                 "callback": "https://example.com/webhooks/callback"
+                    //             },
+                    //             "created_at": "2019-11-16T10:11:12.634234626Z"
+                    //         },
+                    //         "event": {
+                    //             "user_id": "1234",
+                    //             "user_login": "cool_user",
+                    //             "user_name": "Cool_User",
+                    //             "broadcaster_user_id": "1337",
+                    //             "broadcaster_user_login": "cooler_user",
+                    //             "broadcaster_user_name": "Cooler_User",
+                    //             "tier": "1000",
+                    //             "message": {
+                    //                 "text": "Love the stream! FevziGG",
+                    //                 "emotes": [
+                    //                     {
+                    //                         "begin": 23,
+                    //                         "end": 30,
+                    //                         "id": "302976485"
+                    //                     }
+                    //                 ]
+                    //             },
+                    //             "cumulative_months": 15,
+                    //             "streak_months": 1, // null if not shared
+                    //             "duration_months": 6
+                    //         }
+                    //     }
+                    // })
+                    // await HandleNotification({
+                    //     payload: {
+                    //         "subscription": {
+                    //             "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                    //             "type": "channel.cheer",
+                    //             "version": "1",
+                    //             "status": "enabled",
+                    //             "cost": 0,
+                    //             "condition": {
+                    //                 "broadcaster_user_id": "1337"
+                    //             },
+                    //             "transport": {
+                    //                 "method": "webhook",
+                    //                 "callback": "https://example.com/webhooks/callback"
+                    //             },
+                    //             "created_at": "2019-11-16T10:11:12.634234626Z"
+                    //         },
+                    //         "event": {
+                    //             "is_anonymous": false,
+                    //             "user_id": "1234",          // null if is_anonymous=true
+                    //             "user_login": "cool_user",  // null if is_anonymous=true
+                    //             "user_name": "Cool_User",   // null if is_anonymous=true
+                    //             "broadcaster_user_id": "1337",
+                    //             "broadcaster_user_login": "cooler_user",
+                    //             "broadcaster_user_name": "Cooler_User",
+                    //             "message": "pogchamp",
+                    //             "bits": 1000
+                    //         }
+                    //     }
+                    // })
+                    await HandleNotification({
+                        payload: {
+                            "subscription": {
+                                "id": "f1c2a387-161a-49f9-a165-0f21d7a4e1c4",
+                                "type": "channel.raid",
+                                "version": "1",
+                                "status": "enabled",
+                                "cost": 0,
+                                "condition": {
+                                    "to_broadcaster_user_id": "1337"
+                                },
+                                "transport": {
+                                    "method": "webhook",
+                                    "callback": "https://example.com/webhooks/callback"
+                                },
+                                "created_at": "2019-11-16T10:11:12.634234626Z"
+                            },
+                            "event": {
+                                "from_broadcaster_user_id": "1234",
+                                "from_broadcaster_user_login": "cool_user",
+                                "from_broadcaster_user_name": "Cool_User",
+                                "to_broadcaster_user_id": "1337",
+                                "to_broadcaster_user_login": "cooler_user",
+                                "to_broadcaster_user_name": "Cooler_User",
+                                "viewers": 9001
+                            }
+                        }
+                    })
                     break;
                 case "session_keepalive":
                     //console.log(`[INFO] Received session keepalive ${(new Date()).toISOString()}`);
@@ -192,18 +290,15 @@ export const StartEventHandler = () => {
             let func;
             switch (type) {
                 case "channel.subscribe": // first timer
-                    func = EventNewSub;
-                    break;
                 case "channel.subscription.gift": // gifty
-                    func = EventGiftSub;
-                    break;
                 case "channel.subscription.message": // resub
-                    func = EventResub;
+                    func = EventSub
                     break;
                 case "channel.follow": // follow
                     func = EventFollow
                     break;
                 case "channel.cheer": // bits cheer
+                    func = EventCheer
                     break;
                 case "channel.chat.message": // bits cheer
                     break;
@@ -212,9 +307,12 @@ export const StartEventHandler = () => {
                         func = PointTTS
                     }
                     break;
+                case "channel.raid":
+                    func = EventRaid
+                    break
             }
 
-            let {html, timeout, tts_delay} = await func(event);
+            let {html, timeout, tts_delay} = await func({event: event, type:type});
             if (!tts_delay) tts_delay = 0;
             timeout += 2;
             io.emit("overlay_update", html, timeout, tts_delay) // 2 seconds are added to the timeout for the fade

@@ -43,7 +43,8 @@ This is a simple project I built for myself to enhance my Twitch alerts and crea
 - [x] Subscription alerts
 - [x] Re-subscription alerts
 - [x] Gifted subscription alerts
-- [ ] Cheers (bits) alerts
+- [X] Cheers (bits) alerts
+- [X] Raid alerts
 
 ---
 

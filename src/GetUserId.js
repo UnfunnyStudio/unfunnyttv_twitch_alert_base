@@ -1,9 +1,7 @@
 import { env } from "./jsonenv.js";
 import {refreshAccessToken} from "./RefreshToken.js";
 
-let user_id = null;
 export const GetUserId = async () => {
-    if (user_id) return user_id;
     let id = null;
     try {
         const responce = await fetch("https://api.twitch.tv/helix/users", {
@@ -20,6 +18,5 @@ export const GetUserId = async () => {
         refreshAccessToken()
         return null;
     }
-    user_id = id;
     return id;
 }
