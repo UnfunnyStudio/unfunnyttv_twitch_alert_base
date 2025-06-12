@@ -1,7 +1,7 @@
 import {GetTts} from "../tts.js";
 import ejs from "ejs";
 
-export const PointTTS = async (event) => {
+export const PointTTS = async ({event}) => {
     const name = event.user_name;
     const tts_msg = event.user_input;
 

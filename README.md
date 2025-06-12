@@ -7,6 +7,7 @@ This is a simple project I built for myself to enhance my Twitch alerts and crea
 1. Create a file named `env.json` with the following content:
    ```json
    {
+     "port": 3000,
      "client_id": "<your Twitch app client ID>",
      "client_secret": "<your Twitch app client secret>",
      "redirect_uri": "http://localhost:3000/auth/twitch/callback",
