@@ -2,8 +2,14 @@ import { env } from "./src/jsonenv.js";
 import { SetTTSExportPath } from "./src/tts.js";
 import { StartWebserver } from './src/webserver.js';
 import {StartEventHandler} from "./src/EventHandeler.js";
+import {StartLolRankTracking} from "./src/LolRankTracking.js";
+import "./src/Database.js"
+
+
 
 SetTTSExportPath("public/tts/");
+
+await StartLolRankTracking();
 
 StartWebserver();
 

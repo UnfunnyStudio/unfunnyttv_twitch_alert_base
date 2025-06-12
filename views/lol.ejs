@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Rank</title>
+    <style>
+        @font-face {
+            font-family: 'MyFont';
+            src: url('/BeaufortforLOL-Bold.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #main {
+            font-family: 'MyFont', sans-serif;
+            display: flex;
+            flex-direction: row;
+            height: 70px;
+            width: 450px;
+            border-bottom: solid gold 2px;
+            background-color: rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            border-radius: 0 10px 0 0;
+
+        }
+
+        #bg-video {
+            height: 100%;
+            width: 120px;
+            /* fixed width for video on the left */
+            object-fit: cover;
+            opacity: 0.9;
+            flex-shrink: 0;
+            /* don't let it shrink */
+        }
+
+        #page1 {
+            flex: 1;
+            /* take the remaining space */
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            /* or use start/center depending on layout */
+            color: white;
+            font-size: 30px;
+        }
+
+        #page1 img {
+            height: 100%;
+            max-height: 70px;
+            width: auto;
+        }
+        p {
+            margin: 0;
+            text-align: center;
+        }
+        .small-text {
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="main">
+    <video autoplay muted loop playsinline id="bg-video">
+        <source src="/kaisa.mp4" type="video/mp4" />
+    </video>
+    <div id="page1">
+        <img id="tier" src="/ranks/master.png" alt="Rank 1">
+        <div>
+            <p id="rank" style="font-size: 20px; text-align: center;">
+                III
+            </p>
+            <p id="points" style="font-size: 20px;">99LP</p>
+        </div>
+        <div>
+            <p id="overall_wins_loss" style="font-size: 20px; text-align: center; ">
+                54%
+            </p>
+            <p id="overall_wins" style="font-size: 20px;">100 wins</p>
+        </div>
+        <div>
+            <p id="win_loss_12h" style="font-size: 20px; text-align: center; ">
+                4/5
+            </p>
+            <p style="font-size: 20px;">w/l sesh</p>
+        </div>
+    </div>
+</div>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const overall_wins = document.getElementById('overall_wins');
+    const overall_wins_loss = document.getElementById('overall_wins_loss');
+    const win_loss_12h = document.getElementById('win_loss_12h');
+    const rankelm = document.getElementById('rank');
+    const pointselm = document.getElementById('points');
+    const tierelm = document.getElementById('tier');
+
+    socket.on('lol', (rank, points, wins, losses, wins12h, losses12h, tier) => {
+        overall_wins.textContent = `${wins} wins`;
+        overall_wins_loss.textContent = `${Math.round(wins/(losses+wins)*100)}%`;
+        win_loss_12h.textContent = `${wins12h}/${losses12h}`;
+        rankelm.innerHTML = `${rank}`;
+        pointselm.innerHTML = `${points}LP`;
+        tierelm.src = `/ranks/${tier}.png`;
+    });
+
+</script>
+</html>
