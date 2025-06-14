@@ -134,6 +134,12 @@ export const StartLolRankTracking = async () => {
             `);
 
             insertStmt.run(soloQ.rank, soloQ.leaguePoints, soloQ.tier);
+
+            // at this point in the code the user has played a game
+            // but the game is not stored in the db as matches
+            // are only checked on start up due to rate limits
+            // but we can run this here as it will only be 3 calls
+            await UpdateLolMatches();
         }
 
     }, 10 * 1000)

@@ -3,3 +3,4 @@ node_modules
 env.json
 public
 test.js
+db.sqlite

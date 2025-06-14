@@ -15,7 +15,8 @@ let event_active = false
 let socket;
 let socket_down = true;
 
-const Reconnect = async (timeout = 3) => {
+export const Reconnect = async (timeout = 3) => {
+    if (socket_down) return;
     socket_down = true
     if (socket) { socket.close(); }
     console.log("[INFO] trying to reconnect after " + timeout + "'s");

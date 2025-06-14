@@ -21,39 +21,36 @@
             display: flex;
             flex-direction: row;
             height: 70px;
-            width: 450px;
+            width: 415px;
             border-bottom: solid gold 2px;
             background-color: rgba(0, 0, 0, 0.4);
             overflow: hidden;
-            border-radius: 0 10px 0 0;
-
+            border-radius: 0 5px 0 0;
+            padding-right: 5px;
         }
 
         #bg-video {
             height: 100%;
             width: 120px;
-            /* fixed width for video on the left */
             object-fit: cover;
             opacity: 0.9;
             flex-shrink: 0;
-            /* don't let it shrink */
         }
 
         #page1 {
             flex: 1;
-            /* take the remaining space */
             display: flex;
             align-items: center;
             justify-content: space-around;
-            /* or use start/center depending on layout */
             color: white;
             font-size: 30px;
         }
 
         #page1 img {
             height: 100%;
-            max-height: 70px;
+            max-height: 80px;
             width: auto;
+            margin: 0 -3px;
         }
         p {
             margin: 0;
@@ -102,6 +99,9 @@
     const rankelm = document.getElementById('rank');
     const pointselm = document.getElementById('points');
     const tierelm = document.getElementById('tier');
+
+
+    document.querySelector('video').playbackRate = .3;
 
     socket.on('lol', (rank, points, wins, losses, wins12h, losses12h, tier) => {
         overall_wins.textContent = `${wins} wins`;

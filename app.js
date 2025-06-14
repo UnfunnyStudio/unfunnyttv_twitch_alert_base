@@ -9,7 +9,7 @@ import "./src/Database.js"
 
 SetTTSExportPath("public/tts/");
 
-await StartLolRankTracking();
+await StartLolRankTracking(); // comment out to disable
 
 StartWebserver();
 
