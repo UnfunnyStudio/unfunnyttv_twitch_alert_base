@@ -46,7 +46,6 @@ const get_sub_count = async () => {
 
 
 }
-await get_sub_count();
 setInterval(async () => {
     await get_sub_count();
 }, 15*1000)
@@ -74,15 +73,13 @@ app.get('/subcount', (req, res) => {
 
 app.get('/auth/twitch/callback', async (req, res) => {
     const code = req.query.code;
+    console.log(req.body);
     if (!code) {
         console.log("[INFO] failed to get users auth code ");
         res.send("Authentication error check console log");
         return;
-    } else if (env.refresh_token) {
-        console.log("[INFO] Found refresh token, new login attempt blocked!");
-        res.send("Authentication error check console log");
-        return;
     }
+
     console.log("[INFO] attempting to get users auth code");
     const responce = await fetch("https://id.twitch.tv/oauth2/token", {
         method: "POST",
@@ -95,8 +92,8 @@ app.get('/auth/twitch/callback', async (req, res) => {
             redirect_uri: `${env.redirect_uri}`,
         }),
     })
-
     const data = await responce.json();
+    console.log(data);
 
     env.access_token = data.access_token;
     env.refresh_token = data.refresh_token;
