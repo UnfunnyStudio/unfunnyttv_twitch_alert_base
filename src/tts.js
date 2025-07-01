@@ -1,39 +1,51 @@
-// this provides simple text to wav, make sure to set the export path with `SetTTSExportPath()`
-//
+import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import { parseBuffer } from "music-metadata";  // use parseBuffer for in-memory
+import { env } from "./jsonenv.js";
 
-import say from "say";
-import {parseFile} from "music-metadata";
-import fs from "fs";
-import { v4 as uuidv4 } from 'uuid';
-
-
-let _path = ""
+let _path = "";
 
 export const SetTTSExportPath = (path) => {
-    _path = path;
-}
+    _path = path; // you may no longer need this if not saving files
+};
+
+const pollyClient = new PollyClient({
+    region: env.AWS_REGION,
+    credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    },
+});
 
 export const GetTts = (text = "No tts?") => {
     return new Promise(async (resolve, reject) => {
-        const name = `${_path}${uuidv4()}.wav`;
+        try {
+            const params = {
+                OutputFormat: "mp3",       // mp3 output
+                Text: text,
+                VoiceId: "Brian",
+            };
 
-        say.export(text, null, .85, name, async (err) => {
-            if (err) {
-                reject(err);
-                return;
+            const command = new SynthesizeSpeechCommand(params);
+            const response = await pollyClient.send(command);
+
+            const audioChunks = [];
+            for await (const chunk of response.AudioStream) {
+                audioChunks.push(chunk);
             }
+            const audioBuffer = Buffer.concat(audioChunks);
 
-            try {
-                const metadata = await parseFile(name);
-                const duration = metadata.format.duration; // in seconds!
-                const audioBuffer = fs.readFileSync(name);
-                const base64Audio = audioBuffer.toString('base64');
-                const dataUrl = `data:audio/wav;base64,${base64Audio}`;
+            // Parse metadata directly from buffer (no file)
+            const metadata = await parseBuffer(audioBuffer, 'audio/mpeg');
+            const duration = metadata.format.duration; // seconds
 
-                resolve({dataUrl, duration});
-            } catch (e) {
-                reject(e);
-            }
-        });
+            // Convert buffer to base64 data URL
+            const base64Audio = audioBuffer.toString('base64');
+            const dataUrl = `data:audio/mpeg;base64,${base64Audio}`;
+
+            resolve({ dataUrl, duration });
+
+        } catch (error) {
+            reject(error);
+        }
     });
 };

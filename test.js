@@ -1,20 +1,39 @@
-import say from "say";
-import { v4 as uuidv4 } from 'uuid';
+import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import { writeFileSync } from "fs";
+import {env} from "./src/jsonenv.js";
 
 
+const client = new PollyClient({
+    region: env.AWS_REGION,
+    credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    },
+});
 
-say.speak("What's up, dog?")
+const params = {
+    OutputFormat: "mp3",
+    Text: "Hello, this is a test from AWS Polly using dotenv for credentials!",
+    VoiceId: "Joanna",
+};
 
-// tts fuc
-const GetTts = (text="No tts?") => {
-    const name = `${uuidv4()}.wav`
-    say.export(text, null, 1,"public/tts/"+name, (err) => {
-        if (err) {
-            console.log("[WARN] failed to make tts: " + err.message)
-            return null;
+async function synthesizeSpeech() {
+    try {
+        const command = new SynthesizeSpeechCommand(params);
+        const response = await client.send(command);
+
+        const audioChunks = [];
+        for await (const chunk of response.AudioStream) {
+            audioChunks.push(chunk);
         }
-    })
-    return name;
+        const audioBuffer = Buffer.concat(audioChunks);
+
+        writeFileSync("speech.mp3", audioBuffer);
+
+        console.log("Speech synthesized and saved as speech.mp3");
+    } catch (error) {
+        console.error("Error synthesizing speech:", error);
+    }
 }
 
-console.log(GetTts("welp? llll"));
+synthesizeSpeech();
