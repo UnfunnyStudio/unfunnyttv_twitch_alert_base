@@ -5,7 +5,7 @@ import express from "express";
 import http from "http";
 import {Server as SocketIOServer} from "socket.io";
 import {env, SaveEnv} from "./jsonenv.js";
-import {Reconnect} from "./EventHandeler.js";
+import {Reconnect, socket_down} from "./EventHandeler.js";
 
 const port = env.port || 3000;
 const app = express();
@@ -18,6 +18,8 @@ export const io = new SocketIOServer(server);
 // temp code
 
 const get_sub_count = async () => {
+    if (socket_down) { return; }
+
     try {
         const user_details_resp = await fetch(`https://api.twitch.tv/helix/users?login=unfunnyttv`, {
             method: "GET",
@@ -41,11 +43,8 @@ const get_sub_count = async () => {
         console.error("WARN " + e);
         await Reconnect()
     }
-
-
-
-
 }
+
 setInterval(async () => {
     await get_sub_count();
 }, 15*1000)

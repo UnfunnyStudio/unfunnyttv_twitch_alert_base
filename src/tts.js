@@ -2,11 +2,6 @@ import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { parseBuffer } from "music-metadata";  // use parseBuffer for in-memory
 import { env } from "./jsonenv.js";
 
-let _path = "";
-
-export const SetTTSExportPath = (path) => {
-    _path = path; // you may no longer need this if not saving files
-};
 
 const pollyClient = new PollyClient({
     region: env.AWS_REGION,

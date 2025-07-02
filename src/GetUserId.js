@@ -15,7 +15,7 @@ export const GetUserId = async () => {
         id = (await responce.json()).data[0].id;
     } catch (e) {
         console.error("[ERROR] Failed to get users auth code " + e);
-        refreshAccessToken()
+        await refreshAccessToken()
         return null;
     }
     return id;

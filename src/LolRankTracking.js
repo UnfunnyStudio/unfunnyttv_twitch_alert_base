@@ -13,7 +13,6 @@ const GetLolUserID = async () => {
             headers: {'X-Riot-Token': env.lol_api_key}
         }
     );
-
     env.lol_id = res.data.puuid
     SaveEnv()
 }
@@ -152,6 +151,6 @@ export const StartLolRankTracking = async () => {
 
         const overll_win_loss = GetWinLosses();
         const win_loss_12h = GetWinLosses12H();
-        io.emit("lol", row.rank, row.points, overll_win_loss.wins, overll_win_loss.losses, win_loss_12h.wins, win_loss_12h.losses, row.tier);
+        io.emit("lol", row.rank, row.points, overll_win_loss.wins, overll_win_loss.losses, win_loss_12h.wins, win_loss_12h.losses, row.tier.toLowerCase());
     }, 10 * 1000)
 }

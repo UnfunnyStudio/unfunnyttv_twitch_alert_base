@@ -13,7 +13,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const event_queue = []
 let event_active = false
 let socket;
-let socket_down = true;
+export let socket_down = true;
 
 export const Reconnect = async (timeout = 3) => {
     if (socket_down) return;
