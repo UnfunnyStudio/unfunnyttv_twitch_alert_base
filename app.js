@@ -4,7 +4,7 @@ import {StartEventHandler} from "./src/EventHandeler.js";
 import {StartLolRankTracking} from "./src/LolRankTracking.js";
 import "./src/Database.js"
 
-await StartLolRankTracking(); // comment out to disable
+//await StartLolRankTracking(); // comment out to disable
 
 StartWebserver();
 

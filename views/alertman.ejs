@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Alert Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-4">Latest 50 Alerts</h1>
+    <div id="alerts" class="space-y-2"></div>
+</div>
+
+<script>
+    async function fetchAlerts() {
+        const res = await fetch('/get50');
+        const alerts = await res.json();
+        const container = document.getElementById('alerts');
+        container.innerHTML = '';
+        alerts.forEach(alert => {
+            let parsed;
+            try {
+                parsed = JSON.parse(alert.alert);
+            } catch {
+                parsed = {};
+            }
+
+            const type = parsed.metadata?.subscription_type || 'unknown';
+            const username = parsed.payload?.event?.user_name || 'unknown';
+
+            const div = document.createElement('div');
+            div.className = 'bg-white p-4 shadow rounded flex justify-between items-center';
+            div.innerHTML = `
+                    <div>
+                        <p class="text-gray-700 font-mono break-words"><strong>ID:</strong> ${alert.id}</p>
+                        <p class="text-gray-500"><strong>Type:</strong> ${type}</p>
+                        <p class="text-gray-500"><strong>User:</strong> ${username}</p>
+                        <p class="text-gray-500 text-sm">${alert.time_sent}</p>
+                        <p class="text-gray-500 text-sm"><strong>Processed:</strong> ${alert.processed}</p>
+                    </div>
+                    <button
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 replay-btn"
+                        data-id="${alert.id}"
+                    >
+                        Replay
+                    </button>
+                `;
+            container.appendChild(div);
+        });
+
+        // Add event listeners to new buttons
+        document.querySelectorAll('.replay-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const id = e.target.getAttribute('data-id');
+                try {
+                    const resp = await fetch(`/replay/${id}`);
+                    if (resp.ok) {
+                        alert(`Replayed alert ID: ${id}`);
+                    } else {
+                        alert(`Failed to replay alert ID: ${id}`);
+                    }
+                } catch (err) {
+                    alert(`Error replaying alert ID: ${id}`);
+                }
+            });
+        });
+    }
+
+    fetchAlerts();
+    setInterval(fetchAlerts, 5000);
+</script>
+</body>
+</html>

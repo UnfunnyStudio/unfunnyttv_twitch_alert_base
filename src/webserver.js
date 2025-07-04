@@ -5,7 +5,8 @@ import express from "express";
 import http from "http";
 import {Server as SocketIOServer} from "socket.io";
 import {env, SaveEnv} from "./jsonenv.js";
-import {Reconnect, socket_down} from "./EventHandeler.js";
+import {database} from "./Database.js";
+import {HandleNotification} from "./EventHandeler.js";
 
 const port = env.port || 3000;
 const app = express();
@@ -18,7 +19,6 @@ export const io = new SocketIOServer(server);
 // temp code
 
 const get_sub_count = async () => {
-    if (socket_down) { return; }
 
     try {
         const user_details_resp = await fetch(`https://api.twitch.tv/helix/users?login=unfunnyttv`, {
@@ -41,7 +41,6 @@ const get_sub_count = async () => {
         io.emit("subcount", (await sub_info_resp.json()).points);
     } catch (e) {
         console.error("WARN " + e);
-        await Reconnect()
     }
 }
 
@@ -96,6 +95,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     env.access_token = data.access_token;
     env.refresh_token = data.refresh_token;
+    env.expires_at = Date.now() + data.expires_in * 1000;
     env.auth = true
     SaveEnv();
     res.send("Authentication successful! You can close this window.");
@@ -106,6 +106,42 @@ export const StartWebserver = () => {
     server.listen(port, () => {
         console.log(`[INFO] Server listening on port ${port}`);
     })
-
-
 }
+
+
+
+// /alertman page
+app.get('/alertman', (req, res) => {
+    res.render('alertman', {});
+});
+
+// API endpoint to get latest 50 alerts
+app.get('/get50', (req, res) => {
+    try {
+        const stmt = database.prepare(`SELECT id, alert, time_sent, processed FROM alerts ORDER BY id DESC LIMIT 50`);
+        const rows = stmt.all();
+        res.json(rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("DB error");
+    }
+});
+
+// Replay route
+app.get('/replay/:id', (req, res) => {
+    const id = req.params.id;
+    try {
+        const stmt = database.prepare(`SELECT alert FROM alerts WHERE id = ?`);
+        const row = stmt.get(id);
+        if (!row) {
+            res.status(404).send("Alert not found");
+            return;
+        }
+        const message = JSON.parse(row.alert);
+        HandleNotification(message, true);
+        res.send(`Replayed alert ID: ${id}`);
+    } catch (e) {
+        console.error(e);
+        res.status(500).send("Replay error");
+    }
+});
