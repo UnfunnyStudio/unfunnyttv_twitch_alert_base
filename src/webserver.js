@@ -120,7 +120,13 @@ app.get('/alertman', (req, res) => {
 // API endpoint to get latest 50 alerts
 app.get('/get50', (req, res) => {
     try {
-        const stmt = database.prepare(`SELECT id, alert, time_sent, processed FROM alerts ORDER BY id DESC LIMIT 50`);
+        const stmt = database.prepare(`
+            SELECT id, alert, time_sent, processed
+            FROM alerts
+            WHERE json_extract(alert, '$.payload.subscription.type') != 'channel.chat.message'
+            ORDER BY id DESC
+            LIMIT 50
+        `);
         const rows = stmt.all();
         res.json(rows);
     } catch (e) {
