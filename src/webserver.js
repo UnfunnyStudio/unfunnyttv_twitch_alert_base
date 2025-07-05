@@ -7,6 +7,7 @@ import {Server as SocketIOServer} from "socket.io";
 import {env, SaveEnv} from "./jsonenv.js";
 import {database} from "./Database.js";
 import {HandleNotification} from "./EventHandeler.js";
+import {checkTokenValid} from "./RefreshToken.js";
 
 const port = env.port || 3000;
 const app = express();
@@ -21,6 +22,7 @@ export const io = new SocketIOServer(server);
 const get_sub_count = async () => {
 
     try {
+        await checkTokenValid();
         const user_details_resp = await fetch(`https://api.twitch.tv/helix/users?login=unfunnyttv`, {
             method: "GET",
             headers: {
